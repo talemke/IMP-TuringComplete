@@ -1,0 +1,11 @@
+# JEdit auto-save
+*~
+
+# Build Output
+output/
+
+# Misc.
+desktop.ini
+thumbs.db
+thumbs.db.meta
+*.DS_Store
