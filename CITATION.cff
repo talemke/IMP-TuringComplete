@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+authors:
+- family-names: "Lemke"
+  given-names: "Tassilo"
+  orcid: "https://orcid.org/0009-0005-0291-2702"
+title: "IMP is Turing-Complete"
+date-released: 2025-01-08
+url: "https://github.com/talemke/IMP-TuringComplete"
