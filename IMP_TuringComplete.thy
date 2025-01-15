@@ -75,6 +75,14 @@ theory IMP_TuringComplete
     "Universal_Turing_Machine.Turing_aux"
 begin \<comment>\<open>begin-theory IMP\_TuringComplete\<close>
 
+text\<open>
+  During the time of writing, the Hoare Logic was the most powerful and latest introduced tool
+  for reasoning about semantics of my knowledge.
+  There are surely ways to make some proofs shorter and more elegant.
+  However, I took it as a challenge and exercise to use a Hoare Logic and only it,
+  meaning also no Verification Condition Generation.
+\<close>
+
 section\<open>Intermediate Representation\<close>
 
 text\<open>
@@ -122,6 +130,14 @@ lemma tape_eq_correct:
   assumes "xs =\<^sub>T ys"
   shows "read xs = read ys" and "tl xs =\<^sub>T tl ys"
   using assms by (induction xs ys rule: tape_eq.induct) simp+
+
+text\<open>
+  \textbf{Future Note}:
+  Given the latest lecture I am now convinced a much more elegant solution for this
+  would have been to use equivalence classes and/or a quotient datatype.
+  Sadly, during the time of writing I was not aware of this feature,
+  which now introduces this rather complicated custom equivalence relation.
+\<close>
 
 text\<open>
   We now prove some generic properties of the equality relation,
@@ -172,6 +188,17 @@ lemma config_eq_trans': "c1 =\<^sub>C c2 \<Longrightarrow> c2 =\<^sub>C c3 \<Lon
 
 subsubsection\<open>Translation: Tape $\Longleftrightarrow$ Natural Numbers\<close>
 
+text\<open>
+  We want to use natural numbers, specifically their binary representation, to encode tapes.
+  This has the benefit of uniquely identifying tapes, since theoretically the binary
+  representations also have an infinite number of zeroes (the blank symbol).
+\<close>
+
+text\<open>
+  Using the binary representation means shifting the tape is as simple as multiplying or
+  dividing by $2$, to extract the top element we can use modulo $2$.
+\<close>
+
 fun cell_to_nat :: "cell \<Rightarrow> nat" where
   "cell_to_nat Bk = 0" |
   "cell_to_nat Oc = 1"
@@ -194,6 +221,10 @@ fun nat_to_tape :: "nat \<Rightarrow> cell list" where
   "nat_to_tape n = (nat_to_cell (n mod 2))#(nat_to_tape (n div 2))"
 
 subsubsection\<open>Tape Operations\<close>
+
+text\<open>
+  We can now prove that multiplication, division and modulo behave as expected.
+\<close>
 
 lemma mul2_is_push_bk:
   assumes "nat_to_tape n =\<^sub>T xs"
@@ -465,11 +496,33 @@ subsection\<open>Correct-Step Execution\<close>
 
 subsubsection\<open>Instruction-Index\<close>
 
+text\<open>
+  The UTM project we use as dependency executes step, by calculating an instruction index.
+  Turing-Machines are represented as lists of instructions and the corresponding instruction
+  is then executed.
+\<close>
+
+text\<open>
+  The original calculation of this index is:
+  $$i := 2s + h$$
+  where $s$ is the current state and $h$ is the current head symbol ($0$ for $Bk$, $1$ for $Oc$).
+\<close>
+
 fun istate_to_index :: "istate \<Rightarrow> nat" where
   "istate_to_index (s, l, h, r) = 2*s + cell_to_nat h"
 
 abbreviation config_to_index :: "config \<Rightarrow> nat" where
   "config_to_index c \<equiv> istate_to_index (config_to_istate c)"
+
+text\<open>
+  When executing the corresponding instruction, the UTM project first checks if we are in
+  a final state, and would short-circuit to execute a $Nop$ instruction.
+  However, we avoid this short-circuiting by calculating the real instruction index.
+  If it were a final state ($s = 0$), the resulting index would be $0$ or $1$.
+  Thereby, we simply ``prepend'' two $Nop$ instructions to the Turing-Machine.
+  The actual implementation is a bit different and more ugly, by actually checking the value,
+  however the behavior is semantically identical.
+\<close>
 
 abbreviation load_instr :: "tprog0 \<Rightarrow> nat \<Rightarrow> instr" (infix "@\<^sub>I" 55) where
   "tm @\<^sub>I i \<equiv> (if i < (2 + length tm) \<and> i \<ge> 2 then tm!(i-2) else (Nop, 0))"
@@ -488,6 +541,11 @@ next
 qed
 
 subsubsection\<open>Instruction Execution\<close>
+
+text\<open>
+  We now define step functions on our intermediate-state.
+  Furthermore, we can prove that the instruction-index as explained above works as epxected.
+\<close>
 
 fun istep :: "tprog0 \<Rightarrow> istate \<Rightarrow> istate" where
   "istep tm (s, l, h, r) = iupdate (fetch tm s h) (s, l, h, r)"
